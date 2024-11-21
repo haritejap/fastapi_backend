@@ -9,6 +9,31 @@ def connection():
     )
     return conn
 
+def upload_image(image_data):
+    conn = connection()
+    cursor = conn.cursor()
+    try:
+
+        QUERY = '''
+                UPDATE fsd_schema.students_info
+                SET profile_image = '{}'
+                WHERE registration_number = '{}' 
+                '''.format(
+                    image_data.image,
+                    image_data.reg_number
+                )
+        cursor.execute(QUERY)
+        conn.commit()
+
+    except Exception as e:
+        print("Error", str(e), "Occured")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    return "Success"
+
+
 def save_user_registration_details(request_data):
     conn = connection()
     cursor = conn.cursor()
@@ -86,22 +111,24 @@ def save_user_registration_details(request_data):
 
         #User Login Section Start
 
-        # userPassword = request_data['dob'] + str(request_data['mobile_no'][5:])
+        userPassword = str(request_data['dob'])[:4] + str(request_data['mobile_no'])[5:]
         # print(userPassword)
+        print(request_data['mobile_no'], request_data['dob'])
 
-        # INSERT_QUERY1 = '''
-        #         INSERT INTO fsd_schema.students_login(
-        #         registration_number,
-        #         user_name,
-        #         user_password) 
-        #         VALUES({},'{}', '{}')'''.format(
-        #             student_reg_no,
-        #             request_data['email'],
-        #             userPassword
-        #         )
+
+        INSERT_QUERY1 = '''
+                INSERT INTO fsd_schema.students_login(
+                registration_number,
+                user_name,
+                user_password) 
+                VALUES('{}','{}','{}')'''.format(
+                    student_reg_no,
+                    request_data['email'],
+                    userPassword
+                )
         
-        # cursor.execute(INSERT_QUERY1)
-        # conn.commit()
+        cursor.execute(INSERT_QUERY1)
+        conn.commit()
 
         #User Login Section End
 
@@ -113,6 +140,41 @@ def save_user_registration_details(request_data):
             cursor.close()
             conn.close()
     return "Success"
+
+def validate_login_details(login_data):
+    conn = connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    valid_user = False
+    try:
+        QUERY = ''' 
+                SELECT registration_number, user_password FROM fsd_schema.students_login
+                WHERE registration_number = '{}' 
+                '''.format(login_data['user_name'])
+
+        reg_result = cursor.execute(QUERY)
+        reg_records = cursor.fetchall()
+        print(reg_records)
+
+        for row in reg_records:
+           user_password = row['user_password']
+           registration_number = row['registration_number']
+
+        print(user_password,registration_number)
+
+        if(login_data['user_name'] == registration_number and login_data['password'] == user_password):
+            valid_user = True
+
+    except Exception as e:
+        print("Error", str(e), "Occured")
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    return valid_user
+
+
+
 
 def get_subjects_and_courses_data():
     conn = connection()
@@ -162,7 +224,8 @@ def get_students_data(enrollment_number):
                 TO_CHAR(s.admission_date, 'DD-MON-YYYY') AS admission_date,
                 TO_CHAR(s.date_of_birth, 'DD-MON-YYYY') AS date_of_birth,
                 s.email,
-                s.mobile_number 
+                s.mobile_number,
+                s.profile_image 
                 FROM fsd_schema.students_info s
                 INNER JOIN fsd_schema.courses c
                  ON s.course_id = c.course_id
@@ -171,10 +234,11 @@ def get_students_data(enrollment_number):
                 WHERE registration_number = '{}'  
         '''     .format(str(enrollment_number))
         
+        print(QUERY)
         result = cursor.execute(QUERY)
         records = cursor.fetchall()
+        records[0]["profile_image"] = records[0]["profile_image"].tobytes().decode("utf-8")
         
-       
         json_result = json.dumps(records,indent=4)
         
         print(json_result)

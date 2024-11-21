@@ -15,3 +15,33 @@ class UserRegistration(BaseModel):
     class Config:
         orm_mode = True
         arbitrary_types_allowed = True
+
+class LoginForUser(BaseModel):
+    user_login_type : str
+    user_name : str
+    password : str
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True
+
+class StudentData(BaseModel):
+    student_id : str
+    
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True
+
+class ProfileData(BaseModel):
+    student_id : str
+    
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True
+
+class ImageData(BaseModel):
+    image : str
+    reg_number : str
+    
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True
